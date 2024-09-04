@@ -13,6 +13,7 @@ import tf
 from sensor_msgs.msg import Imu
 from sensor_msgs.msg import NavSatFix, NavSatStatus
 from sensor_msgs.msg import FluidPressure
+
 from frl_vehicle_msgs.msg import UwGliderStatus
 
 # import GDAL
@@ -202,6 +203,9 @@ class Node():
           # Increment lat/lon
           self.dr_msg.latitude += dy/mdeglat(self.dr_msg.latitude)
           self.dr_msg.longitude += dx/mdeglon(self.dr_msg.latitude)
+
+          # set depth as altitude
+          self.dr_msg.altitude = -depth
 
           # Transform using GDAL
           # self.xCoord += dx

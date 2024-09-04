@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import rospy
 import time
@@ -30,7 +30,7 @@ def command(startTime):
             command.target_motor_cmd = 0.0
             rospy.loginfo(command)
             pub.publish(command)
-            time.sleep(5)
+            time.sleep(60)
 
             command = UwGliderCommand()
             command.header.stamp = rospy.Time.now()
