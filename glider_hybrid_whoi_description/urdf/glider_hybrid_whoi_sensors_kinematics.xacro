@@ -70,7 +70,7 @@
       power_load="20"
       topic="${namespace}/imu/state"/>
 
-    <!-- Mount a camera -->
+    Mount a camera
     <xacro:regular_camera_plugin_macro
         namespace="${namespace}"
         suffix=""

@@ -137,6 +137,11 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
+        glider_hybrid_whoi/hydrophone_0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
         hector_imu:
           Alpha: 1
           Show Axes: false
@@ -203,6 +208,8 @@ Visualization Manager:
           Value: true
         glider_hybrid_whoi/thruster_1:
           Value: true
+        glider_hybrid_whoi/hydrophone_0:
+          Value: true
         hector_imu:
           Value: true
         ray_link_1:
@@ -252,6 +259,8 @@ Visualization Manager:
                 glider_hybrid_whoi/thruster_0:
                   {}
                 glider_hybrid_whoi/thruster_1:
+                  {}
+                glider_hybrid_whoi/hydrophone_0:
                   {}
                 hector_imu:
                   {}

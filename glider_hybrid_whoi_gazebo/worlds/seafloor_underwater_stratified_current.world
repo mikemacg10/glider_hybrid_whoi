@@ -92,15 +92,15 @@
       <constant_current>
         <topic>current_velocity</topic>
         <velocity>
-          <mean>0</mean>
+          <mean>3</mean>
           <min>0</min>
           <max>5</max>
-          <mu>0.0</mu>
+          <mu>0</mu>
           <noiseAmp>0.0</noiseAmp>
         </velocity>
 
         <horizontal_angle>
-          <mean>0</mean>
+          <mean>1.7</mean>
           <min>-3.141592653589793238</min>
           <max>3.141592653589793238</max>
           <mu>0.0</mu>
@@ -183,7 +183,7 @@
     <gui fullscreen='0'>
       <camera name='user_camera'>
 <!--    <pose frame=''>34.6042 32.2383 -20.6633 0 0.528384 1.41245</pose> -->
-        <pose frame=''>9.0 -3.0 -87.0 0.0 0.7 2.2</pose>
+        <pose frame=''>0 0 5.0 0.0 0.7 2.2</pose>
         <view_controller>orbit</view_controller>
         <projection_type>perspective</projection_type>
       </camera>

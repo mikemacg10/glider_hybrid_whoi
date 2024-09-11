@@ -19,7 +19,7 @@
   <xacro:arg name="namespace" default="glider_hybrid_whoi"/>
   <xacro:arg name="inertial_reference_frame" default="world"/>
   <!-- Include the UUV macro file -->
-  <xacro:include filename="$(find glider_hybrid_whoi_description)/urdf/glider_hybrid_whoi_base_kinematics.xacro"/>
+  <xacro:include filename="$(find glider_hybrid_whoi_description)/urdf/glider_slocum_base_kinematics_slocum.xacro"/>
   <!-- Create the glider_hybrid_whoi -->
   <xacro:glider_hybrid_whoi_base
     namespace="$(arg namespace)"
@@ -27,6 +27,6 @@
     inertial_reference_frame="$(arg inertial_reference_frame)"/>
 
   <!-- Joint state publisher plugin -->
-  <xacro:default_joint_state_publisher namespace="$(arg namespace)" update_rate="50"/>
+  <xacro:default_joint_state_publisher namespace="$(arg namespace)" update_rate="1"/>
 
 </robot>
