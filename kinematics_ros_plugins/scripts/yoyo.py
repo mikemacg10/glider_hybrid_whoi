@@ -65,12 +65,12 @@ class GliderController:
         command.pitch_cmd_type = 3
         command.target_pitch_value = self.pitch # pitch angle
         command.target_pumped_volume = self.oil # vol of Oil
-        # command.rudder_control_mode = 2
-        # command.rudder_angle = 4
-        # command.target_rudder_angle = np.deg2rad(1)
+        command.rudder_control_mode = 2
+        command.rudder_angle = 4
+        command.target_rudder_angle = np.deg2rad(1)
 
-        command.rudder_control_mode = 1
-        command.target_heading = np.deg2rad(270)
+        # command.rudder_control_mode = 1
+        # command.target_heading = np.deg2rad(270)
         command.motor_cmd_type = 1
         command.target_motor_cmd = self.thrust
         self.pub.publish(command)

@@ -76,7 +76,20 @@
     <arg name="roll" value="$(arg roll)"/>
     <arg name="pitch" value="$(arg yaw)"/>
     <arg name="yaw" value="$(arg yaw)"/>
+    <arg name="robot_name" value="glider_hybrid_whoi"/>
   </include>
+
+
+  <!-- <include file="$(find glider_hybrid_whoi_description)/launch/upload_glider_hybrid_whoi_kinematics.launch">
+    <arg name="x" value="10"/>
+    <arg name="y" value="$(arg y)"/>
+    <arg name="z" value="$(arg z)"/>
+    <arg name="roll" value="$(arg roll)"/>
+    <arg name="pitch" value="$(arg yaw)"/>
+    <arg name="yaw" value="$(arg yaw)"/>
+    <arg name="robot_name" value="glider_hybrid_whoi_2"/>
+  </include> -->
+
 
   <!-- Dead reckoning node -->
   <include file="$(find glider_deadreckoning)/launch/deadreckon.launch"/>

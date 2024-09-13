@@ -1,1 +1,1 @@
-from .CC import CrossCorrlate
+from .CC import generateSignal, correlateSignals, HilbertTransform, addNoise, delaySignal
