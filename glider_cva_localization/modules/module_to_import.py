@@ -16,3 +16,6 @@
 #     return TDOA
 
 from modules.core.TDOA import tdoa
+
+def localization(positions, targetPose, speedOfSound=1500):
+    return tdoa(positions, targetPose, speedOfSound)
