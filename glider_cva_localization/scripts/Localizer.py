@@ -34,14 +34,14 @@ class Localizer:
         # subtract the larhest value in the x (m), y (m) and depth (m) columns from the respective columns
         # just for testing purposes
         # TODO: remove this when the real data is used, will remake the csv soon. 
-        self.whaleData['x (m)'] = self.whaleData['x (m)'] - min(self.whaleData['x (m)'])
-        self.whaleData['y (m)'] = self.whaleData['y (m)'] - min(self.whaleData['y (m)'])
-        self.whaleData['depth (m)'] = self.whaleData['depth (m)'] - min(self.whaleData['depth (m)'])
+        self.whaleData['x (m)'] = self.whaleData['x (m)'] - min(self.whaleData['x (m)']) + 500
+        self.whaleData['y (m)'] = self.whaleData['y (m)'] - min(self.whaleData['y (m)']) + 500
+        self.whaleData['depth (m)'] = self.whaleData['depth (m)'] 
 
 
         self.targetPose = np.array([0, 0, 0])
         self.pub = rospy.Publisher('/glider_hybrid_whoi/CVALocalization', PoseStamped, queue_size=10)
-        self.pubWhaleData
+        self.pub2 = rospy.Publisher('/whalePose/estimatedPose', PoseStamped, queue_size=10)
         # rospy.Subscriber("deadreckon", NavSatFix, self.callback_pressure)
         rospy.Subscriber("/gazebo/link_states", LinkStates, self.callbackHydrophoneState)
         rospy.Subscriber("/glider_hybrid_whoi/kinematics/UwGliderStatus", UwGliderStatus, self.robotStateCallback)
@@ -52,12 +52,12 @@ class Localizer:
         self.check = rospy.Timer(rospy.Duration(5), self.timer_callback)
 
         self.hydrophoneState = []
-        # TODO: MAKE ONE VAR FOR GLIDER POSE
+        #TODO: MAKE ONE VAR FOR GLIDER POSE
         self.basePose = np.array([0, 0, 0])
         self.gliderHeading = 0
         
         # Generate a signal for testing
-        self.signal = generateSignal(48000, 1000, 2000, 1)
+        self.signal = generateSignal(48000, 1000, 2000, 2, 0.75)
 
 
     def timer_callback(self, _):
@@ -69,12 +69,12 @@ class Localizer:
         TDOA = self.completeCrossCorrelation(toa_true)
 
         # print(f"Angles pairs: {np.rad2deg(hydrophonePairAngles)}")
-        ambigousBearing = calcAmbigousBearings(TDOA, hydrophonePairAngles, hydrophonePairDisplacment)
+        ambigousBearing, weightDict = calcAmbigousBearings(TDOA, hydrophonePairAngles, hydrophonePairDisplacment)
         # print(f"Ambigous Bearing: {ambigousBearing}")
         combos = make_combos(3, ambigousBearing)
 
         # use Chris Widdes metheod to find the min var bearing
-        minVar = min_var(combos)
+        minVar  = min_var(combos, weightDict)
         # print(f"Min Var: {minVar}")
 
         # get range to target for localization purposes
@@ -87,12 +87,10 @@ class Localizer:
         angle = np.rad2deg(np.arctan2(self.targetPose[0] - self.basePose[0], 
                                                 self.targetPose[1] - self.basePose[1]))
 
-        estimatedPose = self.completeLocalization(self.basePose, minVar, rangeToTarget)
+        estimatedPose = self.completeLocalization(self.basePose, minVar, rangeToTarget) 
 
-        
-
-
-        # print(f"Angle: {angle}")
+        print(f"Estimated angle: {minVar}")
+        print(f"Actual angle: {angle}")   
 
         print(f"Angular Error: {angle - minVar}")
 
@@ -130,10 +128,10 @@ class Localizer:
         # use the true TOA to generate signals for the cross correlation calculation
 
         TOA = TOA - max(TOA)
-        # TOA = TOA + np.random.normal(0, 0.001, 4)
+        TOA = TOA + np.random.normal(0, 0.0001, 4)
         signals = np.array([delaySignal(self.signal, delay, 48000) for delay in TOA])
         # add noise to signals
-        signals = np.array([addNoise(signal, np.random.uniform(0, -1)) for signal in signals])
+        signals = np.array([addNoise(signal, np.random.uniform(10, 10)) for signal in signals])
 
         TDOA = np.array([correlateSignals(signals[i], signals[j]) for i in range(len(signals)) for j in range(i+1, len(signals))])
         return TDOA
@@ -171,7 +169,8 @@ class Localizer:
         targetPose.pose.position.y = data['y (m)'].values[0]
         targetPose.pose.position.z = data['depth (m)'].values[0]
 
-        self.targetPose = np.array([0, 0, 0])
+        self.pub2.publish(targetPose)
+
 
         self.targetPose = np.array([targetPose.pose.position.x, targetPose.pose.position.y, targetPose.pose.position.z])
 
