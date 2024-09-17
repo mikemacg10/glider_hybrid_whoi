@@ -5,6 +5,7 @@ import rospy
 import time
 import math
 import numpy as np
+import utm
 from frl_vehicle_msgs.msg import UwGliderCommand, UwGliderStatus
 from sensor_msgs.msg import NavSatFix, FluidPressure
 from uuv_sensor_ros_plugins_msgs.msg import DVL
@@ -29,17 +30,41 @@ class GliderController:
         self.depth = 0
         
         # create a list of goals        
-        self.goal_lat = -3
-        self.goal_lon = -5
+        self.waypoints = [
+            (166021, 0),
+            (166021, 1000),
+            (167021, 1000),
+            (167021, 0)
+        ]
+
+        self.current_waypoint_index = 0
         self.Kp = -0.2
         self.rudderAngle = 0
 
         self.check = rospy.Timer(rospy.Duration(4), self.timer_callback)
 
     def timer_callback(self, event):
-        # I think this should update goals based on state estimation
-        goal_bearing = self.calculate_bearing(self.lat, self.lon, self.goal_lat, self.goal_lon)
-        deltaHeading =  goal_bearing - self.gliderHeading
+        print(f"Current Waypoint Index: {self.current_waypoint_index}")
+        print(F"Current lat lon: {self.lat}, {self.lon}")
+        utm_coords = utm.from_latlon(self.lat, self.lon, force_zone_number=31, force_zone_letter='N')
+        x = utm_coords[0]
+        y = utm_coords[1]
+        print(f"Current Position: {x}, {y}")
+        x_goal, y_goal = self.waypoints[self.current_waypoint_index]
+
+        print(f"Goal Position: {x_goal}, {y_goal}")
+
+        delta_x = x_goal - x
+        delta_y = y_goal - y
+
+        bearing = np.arctan2(delta_x, delta_y)
+        print(f"Bearing: {np.rad2deg(bearing)}")
+
+        distance = np.sqrt((x_goal - x)**2 + (y_goal - y)**2)
+        print(f"Distance: {distance}")
+
+        # goal_bearing = self.calculate_bearing(self.lat, self.lon, self.goal_lat, self.goal_lon)
+        deltaHeading =  bearing - self.gliderHeading
         print(f"Delta Heading: {np.rad2deg(deltaHeading)}")
 
         # # start with a P controller for heading
@@ -47,6 +72,7 @@ class GliderController:
             self.rudderAngle = self.Kp * deltaHeading
             print(f"Rudder Angle: {self.rudderAngle}")
         elif abs(deltaHeading) < 1:
+            print("Heading is good")
             self.rudderAngle = 0 
 
         # clamp the rudder angle
@@ -55,10 +81,11 @@ class GliderController:
         elif self.rudderAngle < np.deg2rad(-20):
             self.rudderAngle = np.deg2rad(-20)
 
-        # in state estimation, we should send the goal to the controller for heading
-        # and depth
-        #self.pitch = np.deg2rad(-20)
-        #self.oil = self.oil
+        # distance to goal
+        if distance < 50:
+            self.current_waypoint_index += 1
+            if self.current_waypoint_index == len(self.waypoints):
+                self.current_waypoint_index = 0
 
         self.thrust = 0.50
         self.command()
@@ -132,7 +159,7 @@ class GliderController:
         x = np.sin(dlon) * np.cos(lat2)
         y = np.cos(lat1) * np.sin(lat2) - np.sin(lat1) * np.cos(lat2) * np.cos(dlon)
         bearing = (np.arctan2(x, y))
-        return (bearing + 2*np.pi) %  2*np.pi
+        return (bearing + np.pi) % (2 * np.pi) - np.pi
 
 
 

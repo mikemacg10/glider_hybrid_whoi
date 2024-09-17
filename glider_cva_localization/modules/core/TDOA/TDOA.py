@@ -87,9 +87,6 @@ def min_var(combo_bearings, weightDict, top_n=5):
     top_weights = np.array([np.sum([weightDict[bearing] for bearing in combo]) for combo in top_combos])
     top_weights = top_weights / np.sum(top_weights)
     mean_bearings = np.mean(top_combos[np.argmax(top_weights)])
-    print(mean_bearings)
-
-
 
     return mean_bearings
 
@@ -110,6 +107,38 @@ def kmeans(angles, numClusters, maxIterations):
     return clusterCenters.flatten()
 
 # =============================================================================
+
+def generate_lookup_table(hydrophones, bearings):
+    """ Generate the TDOA lookup table for all hydrophone pairs over a range of bearings. """
+    tdoa_table = np.zeros((len(bearings), 7))  # Add an extra column for the bearing angles
+    
+    for i, bearing in enumerate(bearings):
+        # Simulate the source position based on bearing
+        source_x = np.sin(np.radians(bearing)) * 100000  # Assume far distance
+        source_y = np.cos(np.radians(bearing)) * 100000  # Assume far distance
+        source = (source_x, source_y, 0)  # Add a z-coordinate of 0 for the source position
+
+        tdoa1, _ = tdoa(hydrophones, source, speedOfSound=1500)
+        
+        # Calculate TDOA for each pair
+        tdoa_table[i, :-1] = tdoa1
+        
+        # Store the bearing angle in the last column
+        tdoa_table[i, -1] = bearing
+    
+    return tdoa_table
+
+# =============================================================================
+def find_best_match(tdoa_lookup_table, test_tdoa):
+    """ Find the bearing that best matches the test TDOA using least squares. """
+    errors = np.sum((tdoa_lookup_table[:, :-1] - test_tdoa) ** 2, axis=1)  # Least squares error for each bearing
+    best_bearing_index = np.argmin(errors)  # Index of the bearing with the minimum error
+    best_bearing = tdoa_lookup_table[best_bearing_index, -1]  # Bearing with the minimum error
+
+    # TODO: Consider weighting still
+    # top_5_indices = np.argsort(errors)[:5]  # Indices of the top 5 bearings with the minimum errors
+    # top_5_bearings = tdoa_lookup_table[top_5_indices, -1]  # Top 5 bearings
+    return best_bearing
 
 def getRangeToTarget(targetPose, basePose):
     return np.linalg.norm(targetPose[:2] - basePose[:2])

@@ -24,7 +24,7 @@ from geometry_msgs.msg import PoseStamped
 from gazebo_msgs.msg import LinkStates
 from frl_vehicle_msgs.msg import UwGliderStatus
 
-from modules.core.TDOA import tdoa, hydrophonePairOrintation, calcAmbigousBearings, make_combos, min_var, kmeans, getRangeToTarget
+from modules.core.TDOA import tdoa, hydrophonePairOrintation, calcAmbigousBearings, make_combos, min_var, kmeans, getRangeToTarget, find_best_match, generate_lookup_table
 from modules.core.CC import generateSignal, correlateSignals, HilbertTransform, addNoise, delaySignal
 
 
@@ -36,7 +36,8 @@ class Localizer:
         # TODO: remove this when the real data is used, will remake the csv soon. 
         self.whaleData['x (m)'] = self.whaleData['x (m)'] - min(self.whaleData['x (m)']) + 500
         self.whaleData['y (m)'] = self.whaleData['y (m)'] - min(self.whaleData['y (m)']) + 500
-        self.whaleData['depth (m)'] = self.whaleData['depth (m)'] 
+        self.whaleData['depth (m)'] = self.whaleData['depth (m)']
+        self.bearings = np.arange(180, -181, -1)
 
 
         self.targetPose = np.array([0, 0, 0])
@@ -59,6 +60,8 @@ class Localizer:
         # Generate a signal for testing
         self.signal = generateSignal(48000, 1000, 2000, 2, 0.75)
 
+        
+
 
     def timer_callback(self, _):
 
@@ -68,14 +71,18 @@ class Localizer:
         hydrophonePairAngles, hydrophonePairDisplacment = hydrophonePairOrintation(self.hydrophoneState, self.basePose)
         TDOA = self.completeCrossCorrelation(toa_true)
 
-        # print(f"Angles pairs: {np.rad2deg(hydrophonePairAngles)}")
         ambigousBearing, weightDict = calcAmbigousBearings(TDOA, hydrophonePairAngles, hydrophonePairDisplacment)
-        # print(f"Ambigous Bearing: {ambigousBearing}")
         combos = make_combos(3, ambigousBearing)
 
         # use Chris Widdes metheod to find the min var bearing
         minVar  = min_var(combos, weightDict)
-        # print(f"Min Var: {minVar}")
+        print(f"Min Var: {minVar}")
+
+        # # Use Lookup Table TDOA solver
+        self.lookupTable = generate_lookup_table(self.hydrophoneState, self.bearings)
+        searchAOA = find_best_match(self.lookupTable, TDOA)
+        print(f"Search AOA: {searchAOA + self.gliderHeading}")
+        print(self.gliderHeading)
 
         # get range to target for localization purposes
         rangeToTarget = getRangeToTarget(self.basePose, self.targetPose)
@@ -86,11 +93,10 @@ class Localizer:
 
         angle = np.rad2deg(np.arctan2(self.targetPose[0] - self.basePose[0], 
                                                 self.targetPose[1] - self.basePose[1]))
+        
+        print(f"True Angle: {angle}")
 
         estimatedPose = self.completeLocalization(self.basePose, minVar, rangeToTarget) 
-
-        print(f"Estimated angle: {minVar}")
-        print(f"Actual angle: {angle}")   
 
         print(f"Angular Error: {angle - minVar}")
 
@@ -113,7 +119,7 @@ class Localizer:
         #   position.x -= basePosition.x
         #   position.y -= basePosition.y
         #   position.z -= basePosition.z
-          hydrophonePosition = np.array([position.x, position.y, position.z])
+          hydrophonePosition = [position.x, position.y, position.z]
 
           positions.append(hydrophonePosition)
           
