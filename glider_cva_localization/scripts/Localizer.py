@@ -39,7 +39,6 @@ class Localizer:
         self.whaleData['depth (m)'] = self.whaleData['depth (m)']
         self.bearings = np.arange(180, -181, -1)
 
-
         self.targetPose = np.array([0, 0, 0])
         self.pub = rospy.Publisher('/glider_hybrid_whoi/CVALocalization', PoseStamped, queue_size=10)
         self.pub2 = rospy.Publisher('/whalePose/estimatedPose', PoseStamped, queue_size=10)
@@ -50,7 +49,9 @@ class Localizer:
         
         self.whalePub = rospy.Timer(rospy.Duration(5), self.pubWhaleData)
 
-        self.check = rospy.Timer(rospy.Duration(5), self.timer_callback)
+        self.check = rospy.Timer(rospy.Duration(10), self.timer_callback)
+
+        self.falseAlarmTimer = rospy.Timer(rospy.Duration(20), self.falseAlarm)
 
         self.hydrophoneState = []
         #TODO: MAKE ONE VAR FOR GLIDER POSE
@@ -72,24 +73,39 @@ class Localizer:
         TDOA = self.completeCrossCorrelation(toa_true)
 
         ambigousBearing, weightDict = calcAmbigousBearings(TDOA, hydrophonePairAngles, hydrophonePairDisplacment)
+
+        if np.isnan(ambigousBearing).sum() > 3:
+            print("More than 3 values are NaN")
+            print("No estimate for this call")
+            return
+        
+        timeNow = time.time()
         combos = make_combos(3, ambigousBearing)
 
         # use Chris Widdes metheod to find the min var bearing
         minVar  = min_var(combos, weightDict)
-        print(f"Min Var: {minVar}")
+        print(f"Time to run Min Var: {time.time() - timeNow}")
+        print(f"Min Var: {minVar}\n")
 
         # # Use Lookup Table TDOA solver
+        timeNow = time.time()
         self.lookupTable = generate_lookup_table(self.hydrophoneState, self.bearings)
         searchAOA = find_best_match(self.lookupTable, TDOA)
-        print(f"Search AOA: {searchAOA + self.gliderHeading}")
-        print(self.gliderHeading)
+        print(f"Time to run Search: {time.time() - timeNow}")
+        print(f"Search AOA: {searchAOA + self.gliderHeading}\n")
 
         # get range to target for localization purposes
         rangeToTarget = getRangeToTarget(self.basePose, self.targetPose)
+        errorRange = np.random.normal(0, rangeToTarget/5)
+        rangeToTarget += errorRange
         
         # use Kmean to find the best bearing
         # TODO: Find a better way to add the number of clusters and max iterations
-        # clusterCenters = kmeans(ambigousBearing, 8, 100)
+        timeNow = time.time()
+        clusterCenters = kmeans(ambigousBearing, 8, 10)
+        print(f"Time to run Kmeans: {time.time() - timeNow}")
+        print(f"Cluster Centers: {clusterCenters}\n")
+        
 
         angle = np.rad2deg(np.arctan2(self.targetPose[0] - self.basePose[0], 
                                                 self.targetPose[1] - self.basePose[1]))
@@ -98,7 +114,9 @@ class Localizer:
 
         estimatedPose = self.completeLocalization(self.basePose, minVar, rangeToTarget) 
 
-        print(f"Angular Error: {angle - minVar}")
+        print(f"Angular Error: {angle - minVar}\n")
+
+
 
     def callbackHydrophoneState(self, data):
       # Callback fn to continuously update the hydrophone state
@@ -134,7 +152,7 @@ class Localizer:
         # use the true TOA to generate signals for the cross correlation calculation
 
         TOA = TOA - max(TOA)
-        TOA = TOA + np.random.normal(0, 0.0001, 4)
+        TOA = TOA + np.random.uniform(-0.0005, 0.0005, 4)
         signals = np.array([delaySignal(self.signal, delay, 48000) for delay in TOA])
         # add noise to signals
         signals = np.array([addNoise(signal, np.random.uniform(10, 10)) for signal in signals])
@@ -160,10 +178,16 @@ class Localizer:
 
         return np.array([x, y, z])
 
-    def falseAlarm(self):
-        # this will send a signal to the localizer that has incorrect TDOA
+    def falseAlarm(self, _):
+        # send a solved bearing through that is very incorrect
         # this will be used to test the state estimation
-        pass
+        incorrectBearing = np.random.uniform(0, 360)
+        rangeToTarget = getRangeToTarget(self.basePose, self.targetPose) 
+        rangeToTarget += np.random.normal(0, rangeToTarget/2)
+
+        print("False Positive detection Sent")
+        self.completeLocalization(self.basePose, incorrectBearing, rangeToTarget) 
+
     
     def pubWhaleData(self, _):
         # read the rossim time

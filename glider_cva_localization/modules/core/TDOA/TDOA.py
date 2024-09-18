@@ -33,6 +33,8 @@ def calcAmbigousBearings(TDOA, hydrophonePairAngles, hydrophonePairDisplacment, 
     values = speedOfSound * TDOA / hydrophonePairDisplacment
     values = np.where(np.abs(values) > 1.1, np.nan, values)
     values = np.clip(values, -1, 1)
+
+    print(values)
     
     acos_values = np.arccos(values)
     weights = np.abs(np.sin(acos_values)**2)
@@ -95,6 +97,10 @@ def min_var(combo_bearings, weightDict, top_n=5):
 def kmeans(angles, numClusters, maxIterations):
     # Reshape the angles array to be a 2D array with one feature
     angles = angles.reshape(-1, 1)
+
+    # if there are any NaN values, remove them
+    angles = angles[~np.isnan(angles).any(axis=1)]
+
 
     # Perform k-means clustering
     kmeans = KMeans(n_clusters=numClusters, n_init=maxIterations)
