@@ -10,6 +10,7 @@ from math import *
 # ROS/Gazebo imports
 import rospy
 import tf
+from std_msgs.msg import Bool
 from sensor_msgs.msg import Imu
 from sensor_msgs.msg import NavSatFix, NavSatStatus
 from sensor_msgs.msg import FluidPressure
@@ -122,6 +123,8 @@ class Node():
         self.sub_gps = rospy.Subscriber("fix", NavSatFix, self.callback_gps)
         self.pub_fix = rospy.Publisher("deadreckon", NavSatFix, queue_size=1)
 
+        self.pub_gps_used = rospy.Publisher("gps_used", Bool, queue_size=1)
+
 
     def callback_imu(self, data):
         self.imu_msg = data
@@ -177,6 +180,7 @@ class Node():
             self.pub_fix.publish(self.dr_msg)
             self.gps_msg = None
             gpsFix = True
+            self.pub_gps_used.publish(Bool(data=True))
 
         if gpsFix == False:
           # Algo. from:
@@ -203,6 +207,7 @@ class Node():
           # Increment lat/lon
           self.dr_msg.latitude += dy/mdeglat(self.dr_msg.latitude)
           self.dr_msg.longitude += dx/mdeglon(self.dr_msg.latitude)
+          self.dr_msg.status.status = 0
 
           # set depth as altitude
           self.dr_msg.altitude = -depth
