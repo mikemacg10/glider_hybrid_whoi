@@ -44,7 +44,7 @@
                 <topicName>hector_imu</topicName>
                 <robotNamespace>${namespace}</robotNamespace>
                 <serviceName>hector_imu/is_calibrated</serviceName>
-                <gaussianNoise>0.001</gaussianNoise>
+                <gaussianNoise>0.1</gaussianNoise>
                 <xyzOffset>0</xyzOffset>
                 <xyzOffset>0</xyzOffset>
                 <xyzOffsets>0 0 0</xyzOffsets>

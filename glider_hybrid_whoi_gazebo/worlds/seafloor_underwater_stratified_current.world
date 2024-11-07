@@ -85,6 +85,7 @@
     <include>
       <uri>model://sand_heightmap</uri>
       <pose>0 0 -105 0 0 0</pose>
+      <scale>5 5 1</scale> <!-- Adjust the scale values as needed -->
     </include>
 
     <plugin name="underwater_current_plugin" filename="libdave_ocean_current_plugin.so">
